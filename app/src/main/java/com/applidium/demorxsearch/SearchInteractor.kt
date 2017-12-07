@@ -9,7 +9,10 @@ class SearchInteractor {
     private val memberRepository = MemberRepository()
     private val disposables = CompositeDisposable()
 
-    fun execute(querySource: Observable<String>, listener: DisposableObserver<Set<String>>) {
+    fun execute(
+        querySource: Observable<String>,
+        listener: DisposableObserver<Either<Throwable, Set<String>>>
+    ) {
         querySource
             .map { query -> query.normalize() }
             .flatMapSingle { searchQuery -> memberRepository.search(searchQuery) }

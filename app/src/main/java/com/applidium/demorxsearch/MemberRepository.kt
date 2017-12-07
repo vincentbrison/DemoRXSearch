@@ -10,14 +10,14 @@ class MemberRepository {
         "DrewMccaskill", "SophiaStolz", "DelorasDear", "AlesiaSchack", "VedaBonaparte",
         "Inger Maynes")
 
-    fun search(searchQuery: String): Single<Set<String>> {
+    fun search(searchQuery: String): Single<Either<Throwable, Set<String>>> {
         return Single.fromCallable {
             checkNotMainThread()
             simulateSearchDuration(searchQuery)
             return@fromCallable data.filter { name ->
                 name.contains(searchQuery, ignoreCase = true)
             }.toSet()
-        }
+        }.either()
     }
 
     private fun checkNotMainThread() {

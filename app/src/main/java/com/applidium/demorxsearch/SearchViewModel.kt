@@ -5,7 +5,7 @@ import android.util.Log
 import io.reactivex.observers.DisposableObserver
 import io.reactivex.subjects.PublishSubject
 
-class SearchViewModel: ViewModel() {
+class SearchViewModel : ViewModel() {
 
     private val publisher = PublishSubject.create<String>()
     private val searchInteractor = SearchInteractor()
@@ -14,10 +14,10 @@ class SearchViewModel: ViewModel() {
         searchInteractor.execute(publisher, makeSearchResultListener())
     }
 
-    private fun makeSearchResultListener(): DisposableObserver<Set<String>> {
-        return object : DisposableObserver<Set<String>>() {
-            override fun onNext(result: Set<String>) {
-                Log.d("search", "search result = $result")
+    private fun makeSearchResultListener(): DisposableObserver<Either<Throwable, Set<String>>> {
+        return object : DisposableObserver<Either<Throwable, Set<String>>>() {
+            override fun onNext(t: Either<Throwable, Set<String>>) {
+                t.fold({ onError(it) }, { onResult(it) })
             }
 
             override fun onError(e: Throwable) {
@@ -29,6 +29,10 @@ class SearchViewModel: ViewModel() {
             }
 
         }
+    }
+
+    private fun onResult(searchResult: Set<String>) {
+        Log.d("search", "search result = $searchResult")
     }
 
     fun onSearchInput(searchQuery: String) {
