@@ -17,8 +17,11 @@ class SearchInteractor {
     ) {
         querySource
             .map { query -> query.normalize() }
-            .observeOn(Schedulers.io())
-            .flatMapSingle { searchQuery -> memberRepository.search(searchQuery) }
+            .switchMapSingle { searchQuery ->
+                memberRepository
+                    .search(searchQuery)
+                    .subscribeOn(Schedulers.io())
+            }
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(listener)
         disposables.add(listener)
