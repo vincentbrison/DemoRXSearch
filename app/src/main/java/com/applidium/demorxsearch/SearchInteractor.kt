@@ -1,10 +1,12 @@
 package com.applidium.demorxsearch
 
+import android.util.Log
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.observers.DisposableObserver
 import io.reactivex.schedulers.Schedulers
+import java.util.concurrent.TimeUnit
 
 class SearchInteractor {
 
@@ -17,6 +19,15 @@ class SearchInteractor {
     ) {
         querySource
             .map { query -> query.normalize() }
+            .doOnEach { searchQuery ->
+                Log.d("search", "search query = ${searchQuery.value}")
+            }
+            .debounce(1, TimeUnit.SECONDS)
+            .doOnEach { searchQuery ->
+                Log.d(
+                    "search", "Debounce search query = ${searchQuery.value}"
+                )
+            }
             .switchMapSingle { searchQuery ->
                 memberRepository
                     .search(searchQuery)

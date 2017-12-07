@@ -49,7 +49,6 @@ class SearchViewModel : ViewModel() {
     }
 
     fun onSearchInput(searchQuery: String) {
-        Log.d("search", "search query = $searchQuery")
         lastQuery = searchQuery
         viewStateLiveData.value = Loading()
         queryPublisher.onNext(searchQuery)
