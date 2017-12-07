@@ -1,8 +1,10 @@
 package com.applidium.demorxsearch
 
 import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.observers.DisposableObserver
+import io.reactivex.schedulers.Schedulers
 
 class SearchInteractor {
 
@@ -15,7 +17,9 @@ class SearchInteractor {
     ) {
         querySource
             .map { query -> query.normalize() }
+            .observeOn(Schedulers.io())
             .flatMapSingle { searchQuery -> memberRepository.search(searchQuery) }
+            .observeOn(AndroidSchedulers.mainThread())
             .subscribe(listener)
         disposables.add(listener)
     }
