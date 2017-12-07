@@ -1,5 +1,6 @@
 package com.applidium.demorxsearch
 
+import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
@@ -19,7 +20,21 @@ class SearchActivity : AppCompatActivity() {
     private fun setAndBindView() {
         setContentView(R.layout.activity_search)
         viewModel = ViewModelProviders.of(this).get(SearchViewModel::class.java)
+        viewModel.viewState().observe(this, makeViewStateListener())
         edittext_search.addTextChangedListener(makeSearchInputListener())
+    }
+
+    private fun makeViewStateListener(): Observer<ViewState> {
+        return Observer { viewState ->
+            when (viewState) {
+                is Loading -> stateful_search.showLoading()
+                is Error -> stateful_search.showError(viewState.message, { viewModel.onClickRetry() })
+                is Content -> {
+                    stateful_search.showContent()
+                    textview_search_result.text = viewState.result
+                }
+            }
+        }
     }
 
     private fun makeSearchInputListener(): TextWatcher {
