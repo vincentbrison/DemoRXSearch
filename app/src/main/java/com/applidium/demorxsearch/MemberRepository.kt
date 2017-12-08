@@ -1,6 +1,7 @@
 package com.applidium.demorxsearch
 
 import android.os.Looper
+import android.util.Log
 import io.reactivex.Single
 
 class MemberRepository {
@@ -21,6 +22,7 @@ class MemberRepository {
     }
 
     private fun checkNotMainThread() {
+        Log.d("threading", "Doing blocking operation on thread ${Thread.currentThread().id}")
         if (Looper.myLooper() == Looper.getMainLooper()) {
             throw IllegalThreadStateException("Blocking operation on main thread")
         }

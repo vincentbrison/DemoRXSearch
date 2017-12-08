@@ -22,11 +22,17 @@ class SearchInteractor {
             .doOnEach { searchQuery ->
                 Log.d("search", "search query = ${searchQuery.value}")
             }
+            .doOnEach {
+                Log.d("threading", "new search query on thread ${Thread.currentThread().id}")
+            }
             .debounce(1, TimeUnit.SECONDS)
             .doOnEach { searchQuery ->
                 Log.d(
                     "search", "Debounce search query = ${searchQuery.value}"
                 )
+            }
+            .doOnEach {
+                Log.d("threading", "Before switch on thread ${Thread.currentThread().id}")
             }
             .switchMapSingle { searchQuery ->
                 memberRepository
