@@ -6,16 +6,23 @@ import android.arch.lifecycle.ViewModel
 import android.util.Log
 import io.reactivex.observers.DisposableObserver
 import io.reactivex.subjects.PublishSubject
+import kotlinx.coroutines.experimental.CommonPool
+import kotlinx.coroutines.experimental.Job
+import kotlinx.coroutines.experimental.android.UI
+import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.launch
 
 class SearchViewModel : ViewModel() {
 
     private val queryPublisher = PublishSubject.create<String>()
-    private val searchInteractor = SearchInteractor()
+    private val rXsearchInteractor = RXSearchInteractor()
+    private val coroutineSearchInteractor = CoroutineSearchInteractor()
     private val viewStateLiveData = MutableLiveData<ViewState>()
     private var lastQuery: String? = null
+    private var currentJob: Job? = null
 
     init {
-        searchInteractor.execute(queryPublisher, makeSearchResultListener())
+        rXsearchInteractor.execute(queryPublisher, makeSearchResultListener())
     }
 
     fun viewState(): LiveData<ViewState> = viewStateLiveData
@@ -27,8 +34,7 @@ class SearchViewModel : ViewModel() {
             }
 
             override fun onError(e: Throwable) {
-                Log.e("search", "Something went wrong on search", e)
-                viewStateLiveData.value = Error(e.localizedMessage)
+                this@SearchViewModel.onError(e)
             }
 
             override fun onComplete() {
@@ -38,29 +44,57 @@ class SearchViewModel : ViewModel() {
         }
     }
 
-    private fun onResult(searchResult: Set<String>) {
-        Log.d("search", "search result = $searchResult")
+    fun onResult(searchResult: Set<String>) {
+        Log.d("searchAsSingle", "searchAsSingle result = $searchResult")
         viewStateLiveData.value = Content(searchResult.toString())
+    }
+
+    fun onError(throwable: Throwable) {
+        Log.e("searchAsSingle", "Something went wrong on searchAsSingle", throwable)
+        viewStateLiveData.value = Error(throwable.localizedMessage)
     }
 
     fun onClickRetry() {
         val query = lastQuery
-        query?.let { queryPublisher.onNext(query) }
+        query?.let {
+            executeSearch(query)
+        }
     }
 
     fun onSearchInput(searchQuery: String) {
         lastQuery = searchQuery
         viewStateLiveData.value = Loading()
-        queryPublisher.onNext(searchQuery)
+        executeSearch(searchQuery)
+    }
+
+    private fun executeSearch(query: String) {
+        executeSearchUsingRX(query)
+        executeSearchUsingCoroutines(query)
+    }
+
+    private fun executeSearchUsingRX(query: String) {
+        queryPublisher.onNext(query)
+    }
+
+    private fun executeSearchUsingCoroutines(query: String) {
+        currentJob?.cancel()
+        Log.d("threading", "trigger cancel")
+        currentJob = launch(UI) {
+            val result = async(CommonPool, parent = currentJob) {
+                coroutineSearchInteractor.executeJob(query)
+            }
+            result.await().fold({ onError(it) }, { onResult(it) })
+        }
     }
 
     override fun onCleared() {
-        searchInteractor.clear()
+        rXsearchInteractor.clear()
+        currentJob?.cancel()
         super.onCleared()
     }
 }
 
 sealed class ViewState
-class Loading: ViewState()
-data class Error(val message: String): ViewState()
-data class Content(val result: String): ViewState()
+class Loading : ViewState()
+data class Error(val message: String?) : ViewState()
+data class Content(val result: String) : ViewState()

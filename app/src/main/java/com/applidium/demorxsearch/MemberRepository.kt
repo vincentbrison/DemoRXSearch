@@ -11,14 +11,19 @@ class MemberRepository {
         "DrewMccaskill", "SophiaStolz", "DelorasDear", "AlesiaSchack", "VedaBonaparte",
         "Inger Maynes")
 
-    fun search(searchQuery: String): Single<Either<Throwable, Set<String>>> {
+    fun searchAsSingle(searchQuery: String): Single<Either<Throwable, Set<String>>> {
         return Single.fromCallable {
-            checkNotMainThread()
-            simulateSearchDuration(searchQuery)
-            return@fromCallable data.filter { name ->
-                name.contains(searchQuery, ignoreCase = true)
-            }.toSet()
+            return@fromCallable search(searchQuery)
         }.either()
+    }
+
+    fun search(searchQuery: String): Set<String> {
+        checkNotMainThread()
+        simulateSearchDuration(searchQuery)
+        Log.d("threading", "Finishing blocking operation on thread ${Thread.currentThread().id}")
+        return data.filter { name ->
+            name.contains(searchQuery, ignoreCase = true)
+        }.toSet()
     }
 
     private fun checkNotMainThread() {

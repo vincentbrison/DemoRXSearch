@@ -50,7 +50,6 @@ class SearchActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 viewModel.onSearchInput(s.toString())
             }
-
         }
     }
 }

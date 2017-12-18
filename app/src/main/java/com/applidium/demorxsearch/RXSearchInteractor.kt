@@ -8,7 +8,7 @@ import io.reactivex.observers.DisposableObserver
 import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 
-class SearchInteractor {
+class RXSearchInteractor {
 
     private val memberRepository = MemberRepository()
     private val disposables = CompositeDisposable()
@@ -20,15 +20,15 @@ class SearchInteractor {
         querySource
             .map { query -> query.normalize() }
             .doOnEach { searchQuery ->
-                Log.d("search", "search query = ${searchQuery.value}")
+                Log.d("searchAsSingle", "searchAsSingle query = ${searchQuery.value}")
             }
             .doOnEach {
-                Log.d("threading", "new search query on thread ${Thread.currentThread().id}")
+                Log.d("threading", "new searchAsSingle query on thread ${Thread.currentThread().id}")
             }
             .debounce(1, TimeUnit.SECONDS)
             .doOnEach { searchQuery ->
                 Log.d(
-                    "search", "Debounce search query = ${searchQuery.value}"
+                    "searchAsSingle", "Debounce searchAsSingle query = ${searchQuery.value}"
                 )
             }
             .doOnEach {
@@ -36,7 +36,7 @@ class SearchInteractor {
             }
             .switchMapSingle { searchQuery ->
                 memberRepository
-                    .search(searchQuery)
+                    .searchAsSingle(searchQuery)
                     .subscribeOn(Schedulers.io())
             }
             .observeOn(AndroidSchedulers.mainThread())
