@@ -1,50 +1,44 @@
 package com.applidium.demorxsearch
 
-import android.util.Log
-import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.observers.DisposableObserver
+import io.reactivex.Flowable
+import io.reactivex.FlowableTransformer
 import io.reactivex.schedulers.Schedulers
+import org.reactivestreams.Publisher
 import java.util.concurrent.TimeUnit
 
-class SearchInteractor {
-
+class SearchInteractor : FlowableTransformer<Input, Output> {
     private val memberRepository = MemberRepository()
-    private val disposables = CompositeDisposable()
 
-    fun execute(
-        querySource: Observable<String>,
-        listener: DisposableObserver<Either<Throwable, Set<String>>>
-    ) {
-        querySource
-            .map { query -> query.normalize() }
-            .doOnEach { searchQuery ->
-                Log.d("search", "search query = ${searchQuery.value}")
-            }
-            .doOnEach {
-                Log.d("threading", "new search query on thread ${Thread.currentThread().id}")
-            }
-            .debounce(1, TimeUnit.SECONDS)
-            .doOnEach { searchQuery ->
-                Log.d(
-                    "search", "Debounce search query = ${searchQuery.value}"
+    override fun apply(upstream: Flowable<Input>): Publisher<Output> {
+        return upstream
+            .publish { sharedUpstream ->
+                Flowable.merge(
+                    loadingStream(sharedUpstream),
+                    getDataStream(sharedUpstream)
                 )
             }
-            .doOnEach {
-                Log.d("threading", "Before switch on thread ${Thread.currentThread().id}")
-            }
-            .switchMapSingle { searchQuery ->
-                memberRepository
-                    .search(searchQuery)
-                    .subscribeOn(Schedulers.io())
-            }
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(listener)
-        disposables.add(listener)
     }
 
-    fun clear() {
-        disposables.dispose()
+    private fun loadingStream(upstream: Flowable<Input>) =
+        upstream.map { Output.InFlight }
+
+    private fun getDataStream(upstream: Flowable<Input>): Flowable<Output> {
+        return upstream.map { query -> query.normalize() }
+            .debounce(1, TimeUnit.SECONDS)
+            .switchMap { searchQuery ->
+                memberRepository
+                    .search(searchQuery)
+                    .map { Output.Result(it) as Output }
+                    .onErrorReturn { Output.Error(it) }
+                    .toFlowable()
+                    .subscribeOn(Schedulers.io())
+            }
     }
+}
+
+typealias Input = String
+sealed class Output {
+    object InFlight : Output()
+    data class Result(val value: Set<String>) : Output()
+    data class Error(val throwable: Throwable) : Output()
 }

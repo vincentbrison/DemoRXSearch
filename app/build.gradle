@@ -21,11 +21,21 @@ android {
 }
 
 dependencies {
+    // View
     implementation "com.android.support:appcompat-v7:$support_version"
+    implementation "com.jakewharton.rxbinding2:rxbinding-kotlin:$rxbinding_version"
     implementation "com.android.support.constraint:constraint-layout:$constraint_version"
+    implementation "com.github.gturedi:stateful-layout:$stateful_version"
+
+    // Kotlin
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+
+    // Arch
     implementation "android.arch.lifecycle:extensions:$arch_version"
     implementation "io.reactivex.rxjava2:rxjava:$rxjava_version"
     implementation "io.reactivex.rxjava2:rxandroid:$rxandroid_version"
-    implementation "com.github.gturedi:stateful-layout:$stateful_version"
+    implementation "io.reactivex.rxjava2:rxkotlin:$rxkotlin_version"
+    implementation "android.arch.lifecycle:reactivestreams:$arch_version"
+    debugImplementation "com.squareup.leakcanary:leakcanary-android:$leak_canary_version"
+    releaseImplementation "com.squareup.leakcanary:leakcanary-android-no-op:$leak_canary_version"
 }

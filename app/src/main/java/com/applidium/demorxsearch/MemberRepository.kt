@@ -11,14 +11,17 @@ class MemberRepository {
         "DrewMccaskill", "SophiaStolz", "DelorasDear", "AlesiaSchack", "VedaBonaparte",
         "Inger Maynes")
 
-    fun search(searchQuery: String): Single<Either<Throwable, Set<String>>> {
+    fun search(searchQuery: String): Single<Set<String>> {
         return Single.fromCallable {
             checkNotMainThread()
             simulateSearchDuration(searchQuery)
+            if (searchQuery.startsWith("error")) {
+                throw IllegalArgumentException("error in name")
+            }
             return@fromCallable data.filter { name ->
                 name.contains(searchQuery, ignoreCase = true)
             }.toSet()
-        }.either()
+        }
     }
 
     private fun checkNotMainThread() {
